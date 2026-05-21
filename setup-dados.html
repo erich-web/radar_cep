@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -119,10 +120,10 @@
             border-radius: 8px;
             margin-top: 24px;
             display: none;
+            font-size: 12px;
         }
         .error-message.show {
             display: block;
-            font-size: 12px;
         }
     </style>
 </head>
@@ -139,7 +140,7 @@
 
         <div class="success-message" id="successMsg">
             ✅ Dados cadastrados com sucesso!<br><br>
-            <small>Abra agora o <strong>ceo-radar-final.html</strong> para ver seu radar.</small>
+            <small>Abra agora o <strong>index.html</strong> ou <strong>ceo-radar-final.html</strong> para ver seu radar.</small>
         </div>
 
         <div class="error-message" id="errorMsg"></div>
@@ -181,18 +182,15 @@
             btn.disabled = true;
 
             try {
-                // Salvar user_id
                 if (!localStorage.getItem('ceoRadarUserId')) {
                     localStorage.setItem('ceoRadarUserId', userId);
                 }
 
-                // Limpar dados antigos (opcional)
                 await supabase
                     .from('topics')
                     .delete()
                     .eq('user_id', userId);
 
-                // Inserir novos dados
                 for (const topic of TOPICS) {
                     updateStatus(topic.title, '⏳', 'loading');
 
@@ -213,7 +211,7 @@
                     }
 
                     updateStatus(topic.title, '✅', 'success');
-                    await new Promise(r => setTimeout(r, 300)); // Delay para efeito visual
+                    await new Promise(r => setTimeout(r, 300));
                 }
 
                 setTimeout(() => {
@@ -227,14 +225,7 @@
                 document.getElementById('errorMsg').innerHTML = `
                     ❌ Erro ao cadastrar dados<br><br>
                     <strong>Motivo:</strong> ${error.message}<br><br>
-                    Verifique se a tabela 'topics' existe no Supabase com as colunas:<br>
-                    - id (uuid)<br>
-                    - user_id (text)<br>
-                    - title (text)<br>
-                    - urgency (integer)<br>
-                    - importance (integer)<br>
-                    - status (text)<br>
-                    - created_at (timestamp)
+                    Verifique se a tabela 'topics' existe no Supabase.
                 `;
                 btn.disabled = false;
             }
