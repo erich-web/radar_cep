@@ -4,1032 +4,1052 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEO Radar</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Radar CEO — Assuntos Críticos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #6366F1;
-            --primary-light: #818CF8;
-            --accent: #10B981;
-            --accent-light: #34D399;
-            --danger: #EF4444;
-            --warning: #F59E0B;
-            --bg: #0F172A;
-            --bg-secondary: #1E293B;
-            --bg-tertiary: #334155;
-            --text-primary: #F1F5F9;
-            --text-secondary: #CBD5E1;
-            --text-tertiary: #94A3B8;
-            --border: #475569;
-            --panel-width: 380px;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--bg) 0%, #1a2945 100%);
-            color: var(--text-primary);
-            overflow: hidden;
-            height: 100vh;
+        :root {
+            --black: #0F0F0F;
+            --dark: #1A1A1A;
+            --space-gray: #313131;
+            --off-white: #F5F4F0;
+            --white: #FFFFFF;
+            --green: #00B73D;
+            --green-dark: #009932;
+            --red-critico: #EF4444;
+            --orange-alto: #F59E0B;
+            --f-display: 'Anton', sans-serif;
+            --f-serif: 'Spectral', serif;
+            --f-body: 'DM Sans', sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+            --t-fast: 150ms var(--ease-in-out);
+            --t-base: 250ms var(--ease-in-out);
+            --t-slow: 400ms var(--ease-in-out);
         }
 
-        .container {
-            display: grid;
-            grid-template-columns: 1fr;
-            height: 100vh;
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: var(--f-body);
+            background: var(--off-white);
+            color: var(--black);
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Layout Principal */
+        .app-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 360px;
+            background: var(--white);
+            border-right: 1px solid rgba(15, 15, 15, 0.08);
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--t-slow), width var(--t-slow);
+            overflow: hidden;
+            z-index: 50;
             position: relative;
         }
 
-        .radar-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            height: 100%;
-            width: 100%;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .sidebar.hidden {
+            transform: translateX(-100%);
+            width: 0;
+            border-right: none;
         }
 
-        .container.panel-open .radar-section {
-            margin-right: var(--panel-width);
+        /* Sidebar Header */
+        .sidebar-header {
+            padding: 32px 32px 24px;
+            border-bottom: 1px solid rgba(15, 15, 15, 0.08);
+            flex-shrink: 0;
         }
 
-        .panel-section {
-            position: fixed;
-            right: 0;
-            top: 0;
-            width: var(--panel-width);
-            height: 100vh;
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
+        .sidebar-title {
+            font-family: var(--f-display);
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            color: var(--black);
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+
+        .sidebar-subtitle {
+            font-family: var(--f-serif);
+            font-size: 12px;
+            font-style: italic;
+            color: rgba(15, 15, 15, 0.5);
+        }
+
+        /* Sidebar Content */
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 0;
             display: flex;
             flex-direction: column;
-            z-index: 100;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateX(100%);
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
         }
 
-        .container.panel-open .panel-section {
-            transform: translateX(0);
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .panel-toggle {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            width: 56px;
-            height: 56px;
-            background: var(--primary);
-            border: none;
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(15, 15, 15, 0.15);
+            border-radius: 3px;
+        }
+
+        /* Seção de Assuntos */
+        .topics-section {
+            padding: 0 24px;
+            margin-bottom: 24px;
+        }
+
+        .topics-section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--f-body);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--black);
+            padding: 0 8px 12px 8px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(15, 15, 15, 0.1);
+        }
+
+        .topics-section-label::before {
+            content: '';
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            color: white;
-            font-size: 24px;
+            background: var(--black);
+            flex-shrink: 0;
+        }
+
+        .topic-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px 12px;
+            background: var(--off-white);
+            border: 1px solid rgba(15, 15, 15, 0.06);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all var(--t-base);
+            position: relative;
+        }
+
+        .topic-item:hover {
+            background: var(--white);
+            border-color: var(--green);
+            transform: translateX(4px);
+        }
+
+        .topic-priority-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .topic-item.priority-critico .topic-priority-dot {
+            background: var(--red-critico);
+        }
+
+        .topic-item.priority-alto .topic-priority-dot {
+            background: var(--orange-alto);
+        }
+
+        .topic-item.priority-medio .topic-priority-dot {
+            background: var(--green);
+        }
+
+        .topic-item.priority-baixo .topic-priority-dot {
+            background: rgba(15, 15, 15, 0.25);
+        }
+
+        .topic-label {
+            font-family: var(--f-body);
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--black);
+            flex: 1;
+        }
+
+        .topic-score {
+            font-family: var(--f-body);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(15, 15, 15, 0.4);
+            white-space: nowrap;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            padding: 24px;
+            border-top: 1px solid rgba(15, 15, 15, 0.08);
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            font-family: var(--f-body);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 12px 16px;
+            border: none;
+            cursor: pointer;
+            transition: all var(--t-base);
+            text-decoration: none;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--black);
+            color: var(--off-white);
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: var(--green);
+            color: var(--black);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--black);
+            border: 1px solid rgba(15, 15, 15, 0.2);
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--black);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Toggle Button */
+        .sidebar-toggle {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+            width: 44px;
+            height: 44px;
+            background: var(--white);
+            border: 1px solid rgba(15, 15, 15, 0.1);
+            border-radius: 0;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1001;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+            font-size: 20px;
+            color: var(--black);
+            transition: all var(--t-base);
+            z-index: 40;
         }
 
-        .panel-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
+        .sidebar-toggle:hover {
+            background: var(--black);
+            color: var(--off-white);
+            transform: scale(1.05);
         }
 
-        .panel-toggle:active {
-            transform: scale(0.95);
-        }
-
-        .container.panel-open .panel-toggle {
-            right: calc(var(--panel-width) + 20px);
-            background: var(--accent);
-        }
-
-        .radar-wrapper {
+        /* Radar Area */
+        .radar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            padding-left: 80px;
             position: relative;
-            width: 100%;
-            max-width: 85vw;
-            height: 85vh;
-            aspect-ratio: 1;
+            overflow: hidden;
         }
 
-        .radar-canvas {
+        /* Header Mini */
+        .radar-header {
+            position: absolute;
+            top: 32px;
+            right: 48px;
+            text-align: right;
+            z-index: 10;
+        }
+
+        .radar-eyebrow {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            font-family: var(--f-body);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--green);
+            margin-bottom: 12px;
+        }
+
+        .radar-eyebrow::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+        }
+
+        .radar-title {
+            font-family: var(--f-display);
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            text-transform: uppercase;
+            color: var(--black);
+            line-height: 0.95;
+            max-width: 400px;
+        }
+
+        /* SVG Radar */
+        .radar-svg-wrapper {
+            position: relative;
             width: 100%;
             height: 100%;
-            position: relative;
+            max-width: 600px;
+            max-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .radar-svg {
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 0 40px rgba(99, 102, 241, 0.15));
         }
 
+        /* Itens do Radar */
         .radar-items {
             position: absolute;
             inset: 0;
-            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .item-point {
+        .radar-item {
             position: absolute;
-            transform: translate(-50%, -50%);
-            width: 70px;
-            height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all var(--t-base);
         }
 
-        .item-dot {
-            width: 100%;
-            height: 100%;
-            background: var(--primary);
-            border: 3px solid var(--primary-light);
+        .radar-item-circle {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .item-dot::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
-            border-radius: 50%;
-        }
-
-        .item-dot.high-priority {
-            background: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
-            border-color: #FCA5A5;
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.1);
-        }
-
-        .item-dot.medium-priority {
-            background: linear-gradient(135deg, var(--warning) 0%, #D97706 100%);
-            border-color: #FBBF24;
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
-        }
-
-        .item-dot:hover {
-            transform: scale(1.15);
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
-        }
-
-        .item-tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 12px 16px;
-            border-radius: 8px;
-            white-space: nowrap;
             font-size: 12px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            border: 1px solid var(--border);
-            z-index: 10;
-            margin-bottom: 10px;
+            font-weight: 700;
+            color: white;
+            transition: all var(--t-base);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        .item-dot:hover .item-tooltip {
+        .radar-item:hover .radar-item-circle {
+            transform: scale(1.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .radar-item.priority-critico .radar-item-circle {
+            background: var(--red-critico);
+        }
+
+        .radar-item.priority-alto .radar-item-circle {
+            background: var(--orange-alto);
+        }
+
+        .radar-item.priority-medio .radar-item-circle {
+            background: var(--green);
+        }
+
+        .radar-item.priority-baixo .radar-item-circle {
+            background: rgba(15, 15, 15, 0.25);
+        }
+
+        .radar-item-label {
+            font-family: var(--f-body);
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            color: var(--black);
+            max-width: 85px;
+            line-height: 1.4;
+            opacity: 0;
+            transition: opacity var(--t-base);
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 10px;
+            border-radius: 4px;
+            position: relative;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .radar-item:hover .radar-item-label {
             opacity: 1;
         }
 
-        .panel-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .panel-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .panel-subtitle {
-            font-size: 12px;
-            color: var(--text-tertiary);
-        }
-
-        .panel-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-        }
-
-        .panel-footer {
-            padding: 16px;
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
+        /* Legend */
+        .radar-legend {
+            position: absolute;
+            bottom: 48px;
+            left: 48px;
             display: flex;
-            gap: 8px;
-        }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .stat {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-light);
-            line-height: 1;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .items-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .item-badge {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            display: block;
-        }
-
-        .item-badge:hover {
-            background: var(--bg-secondary);
-            border-color: var(--primary);
-            transform: translateX(4px);
-        }
-
-        .item-badge.on-hold {
-            opacity: 0.6;
-            border-color: var(--warning);
-        }
-
-        .item-badge.completed {
-            opacity: 0.4;
-            text-decoration: line-through;
-        }
-
-        .item-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .item-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            color: var(--text-tertiary);
-        }
-
-        .item-scores {
-            display: flex;
-            gap: 8px;
-        }
-
-        .score-tag {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-light);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            flex: 1;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border);
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
+            gap: 32px;
+            font-family: var(--f-body);
             font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            z-index: 10;
         }
 
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 15, 15, 0.6);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.3s ease;
         }
 
-        .modal.active {
+        .modal.show {
             display: flex;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         .modal-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
+            background: var(--off-white);
+            padding: 48px;
+            max-width: 500px;
             width: 90%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            animation: slideUp var(--t-slow) var(--ease-out);
         }
 
         @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                opacity: 0;
+                transform: translateY(48px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 24px;
+            font-family: var(--f-display);
+            font-size: 28px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            color: var(--black);
+            line-height: 1;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
+            font-family: var(--f-body);
+            font-size: 10px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
+            letter-spacing: 0.15em;
+            color: rgba(15, 15, 15, 0.6);
+            display: block;
+            margin-bottom: 12px;
         }
 
-        .form-input {
+        .form-input,
+        .form-select {
+            font-family: var(--f-body);
+            font-size: 1rem;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(15, 15, 15, 0.25);
+            padding: 12px 0;
             width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .form-input:focus {
             outline: none;
-            border-color: var(--primary);
-            background: var(--bg);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            transition: border-color var(--t-base);
         }
 
-        .scale-buttons {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
+        .form-input:focus,
+        .form-select:focus {
+            border-bottom-color: var(--green);
         }
 
-        .scale-btn {
-            padding: 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-weight: 600;
+        .slider-value {
+            display: inline-block;
+            font-weight: 700;
+            color: var(--green);
+            margin-left: 12px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: none;
+            border: none;
+            font-size: 28px;
             cursor: pointer;
-            transition: all 0.3s;
+            color: var(--black);
+            transition: transform var(--t-base);
         }
 
-        .scale-btn.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        .scale-btn:hover:not(.active) {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.1);
+        .modal-close:hover {
+            transform: rotate(90deg);
         }
 
         .modal-actions {
             display: flex;
             gap: 12px;
-            margin-top: 32px;
+            margin-top: 40px;
         }
 
-        .modal-actions button {
+        .modal-actions .btn {
             flex: 1;
+            padding: 16px 24px;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
+        /* Responsivo */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 320px;
+            }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
+            .radar-container {
+                padding-left: 48px;
+            }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border);
+            .radar-title {
+                font-size: clamp(1.5rem, 3vw, 2.5rem);
+            }
         }
 
         @media (max-width: 768px) {
-            .radar-section {
-                padding: 10px;
-            }
-
-            .radar-wrapper {
-                max-width: 90vw;
-                height: 90vh;
-            }
-
-            .item-point {
-                width: 50px;
-                height: 50px;
-            }
-
-            .modal-content {
-                padding: 24px;
-            }
-
-            :root {
-                --panel-width: 100%;
-            }
-
-            .panel-section {
+            .sidebar {
+                position: absolute;
                 width: 100%;
-                bottom: 0;
-                right: 0;
-                height: auto;
-                max-height: 60vh;
-                transform: translateY(100%);
-                border-left: none;
-                border-top: 1px solid var(--border);
+                height: 100%;
+                left: 0;
+                top: 0;
+                z-index: 60;
+                border-right: none;
             }
 
-            .container.panel-open .panel-section {
-                transform: translateY(0);
+            .sidebar.hidden {
+                transform: translateX(-100%);
             }
 
-            .container.panel-open .radar-section {
-                margin-right: 0;
-                margin-bottom: 60vh;
+            .app-layout {
+                flex-direction: column;
             }
-        }
 
-        .empty-state {
-            text-align: center;
-            padding: 32px 16px;
-            color: var(--text-tertiary);
-        }
+            .main-content {
+                width: 100%;
+            }
 
-        .empty-state p {
-            font-size: 12px;
-            line-height: 1.6;
-        }
+            .radar-container {
+                padding: 32px;
+                padding-left: 80px;
+            }
 
-        .empty-state-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-            opacity: 0.5;
+            .radar-header {
+                top: 80px;
+                right: 32px;
+            }
+
+            .radar-legend {
+                left: 32px;
+                bottom: 32px;
+                gap: 16px;
+                font-size: 9px;
+            }
+
+            .sidebar-footer {
+                flex-direction: column;
+            }
+
+            .sidebar-footer .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="radar-section">
-            <div class="radar-wrapper">
-                <div class="radar-canvas">
-                    <svg class="radar-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <radialGradient id="radarGradient" cx="50%" cy="50%" r="60%">
-                                <stop offset="0%" style="stop-color:rgba(99,102,241,0.1);stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:rgba(99,102,241,0);stop-opacity:1" />
-                            </radialGradient>
-                        </defs>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Prioridades</h2>
+                <p class="sidebar-subtitle">Acompanhe seus assuntos</p>
+            </div>
 
-                        <circle cx="200" cy="200" r="160" fill="url(#radarGradient)"/>
-                        <circle cx="200" cy="200" r="160" fill="none" stroke="rgba(99,102,241,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
-                        <circle cx="200" cy="200" r="120" fill="none" stroke="rgba(99,102,241,0.12)" stroke-width="1" stroke-dasharray="4,4"/>
-                        <circle cx="200" cy="200" r="80" fill="none" stroke="rgba(99,102,241,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
-                        <circle cx="200" cy="200" r="40" fill="none" stroke="rgba(99,102,241,0.2)" stroke-width="2"/>
+            <div class="sidebar-content" id="sidebarContent">
+                <!-- Será preenchido dinamicamente -->
+            </div>
 
-                        <line x1="200" y1="15" x2="200" y2="385" stroke="rgba(99,102,241,0.15)" stroke-width="1.5"/>
-                        <line x1="15" y1="200" x2="385" y2="200" stroke="rgba(99,102,241,0.15)" stroke-width="1.5"/>
-                        <line x1="50" y1="50" x2="350" y2="350" stroke="rgba(99,102,241,0.08)" stroke-width="1"/>
-                        <line x1="350" y1="50" x2="50" y2="350" stroke="rgba(99,102,241,0.08)" stroke-width="1"/>
+            <div class="sidebar-footer">
+                <button class="btn btn-primary" onclick="openModal('add')">+ Novo</button>
+                <button class="btn btn-secondary" onclick="location.href='setup-dados.html'">Setup</button>
+            </div>
+        </aside>
 
-                        <text x="200" y="25" text-anchor="middle" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">CRÍTICO</text>
-                        <text x="385" y="207" text-anchor="start" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">CRÍTICO</text>
-                        <text x="200" y="395" text-anchor="middle" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">BAIXO</text>
-                        <text x="12" y="207" text-anchor="end" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">BAIXO</text>
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <button class="sidebar-toggle" id="sidebarToggle" title="Minimizar/Maximizar">☰</button>
 
-                        <text x="200" y="55" text-anchor="middle" font-size="11" fill="rgba(148,163,184,0.5)" font-family="Inter">Importância</text>
-                        <text x="360" y="190" text-anchor="end" font-size="11" fill="rgba(148,163,184,0.5)" font-family="Inter">Urgência</text>
+            <div class="radar-container">
+                <div class="radar-header">
+                    <div class="radar-eyebrow">Monitor em tempo real</div>
+                    <h1 class="radar-title">SEU<br>RADAR</h1>
+                </div>
+
+                <div class="radar-svg-wrapper">
+                    <svg class="radar-svg" viewBox="-50 -50 600 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                        <!-- Grid circles -->
+                        <circle cx="250" cy="250" r="180" fill="none" stroke="rgba(15,15,15,0.08)" stroke-width="1"/>
+                        <circle cx="250" cy="250" r="135" fill="none" stroke="rgba(15,15,15,0.08)" stroke-width="1"/>
+                        <circle cx="250" cy="250" r="90" fill="none" stroke="rgba(15,15,15,0.08)" stroke-width="1"/>
+                        <circle cx="250" cy="250" r="45" fill="none" stroke="rgba(15,15,15,0.08)" stroke-width="1"/>
+
+                        <!-- Axes -->
+                        <line x1="250" y1="-50" x2="250" y2="550" stroke="rgba(15,15,15,0.12)" stroke-width="1"/>
+                        <line x1="-50" y1="250" x2="550" y2="250" stroke="rgba(15,15,15,0.12)" stroke-width="1"/>
+
+                        <!-- Quadrant Labels -->
+                        <text x="250" y="20" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(15,15,15,0.4)">CRÍTICO</text>
+                        <text x="500" y="260" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(15,15,15,0.4)">CRÍTICO</text>
+                        <text x="0" y="260" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(15,15,15,0.4)">BAIXO</text>
+                        <text x="250" y="540" text-anchor="middle" font-size="11" font-weight="500" fill="rgba(15,15,15,0.4)">BAIXO</text>
                     </svg>
-
-                    <ul class="radar-items" id="radarItems"></ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel-section">
-            <div class="panel-header">
-                <div class="panel-title">Seu Radar</div>
-                <div class="panel-subtitle" id="radarSubtitle">Carregando...</div>
-            </div>
-
-            <div class="panel-content">
-                <div class="stats-row">
-                    <div class="stat">
-                        <div class="stat-value" id="statActive">0</div>
-                        <div class="stat-label">Ativos</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="statHold">0</div>
-                        <div class="stat-label">Em Espera</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="statCompleted">0</div>
-                        <div class="stat-label">Concluídos</div>
-                    </div>
+                    <div class="radar-items" id="radarItems"></div>
                 </div>
 
-                <div id="itemsContainer"></div>
+                <div class="radar-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--red-critico);"></div>
+                        <span>Crítico</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--orange-alto);"></div>
+                        <span>Alto</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--green);"></div>
+                        <span>Médio</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: rgba(15,15,15,0.25);"></div>
+                        <span>Baixo</span>
+                    </div>
+                </div>
             </div>
-
-            <div class="panel-footer">
-                <button class="btn btn-secondary btn-sm" id="exportBtn">📥</button>
-                <button class="btn btn-primary" id="newItemBtn">➕ Novo</button>
-            </div>
-        </div>
-
-        <button class="panel-toggle" id="panelToggle">☰</button>
+        </main>
     </div>
 
+    <!-- Modal -->
     <div class="modal" id="modal">
         <div class="modal-content">
-            <h2 class="modal-title">Novo Assunto</h2>
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <h2 class="modal-title" id="modalTitle">Novo Assunto</h2>
 
-            <form id="itemForm">
+            <form id="topicForm" onsubmit="saveTopic(event)">
                 <div class="form-group">
-                    <label class="form-label">Título</label>
-                    <input type="text" class="form-input" id="titleInput" placeholder="Ex: Fechar contrato Campari" required>
+                    <label class="form-label">Assunto</label>
+                    <input type="text" class="form-input" id="inputTitle" placeholder="Ex: Fechar contrato..." required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Urgência (1-5)</label>
-                    <div class="scale-buttons" id="urgencyScale">
-                        <button type="button" class="scale-btn" data-value="1">1</button>
-                        <button type="button" class="scale-btn" data-value="2">2</button>
-                        <button type="button" class="scale-btn" data-value="3">3</button>
-                        <button type="button" class="scale-btn" data-value="4">4</button>
-                        <button type="button" class="scale-btn" data-value="5">5</button>
-                    </div>
+                    <label class="form-label">Urgência <span class="slider-value" id="urgencyValue">3</span></label>
+                    <input type="range" class="form-input" id="inputUrgency" min="1" max="5" value="3" style="padding: 8px 0;">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Importância (1-5)</label>
-                    <div class="scale-buttons" id="importanceScale">
-                        <button type="button" class="scale-btn" data-value="1">1</button>
-                        <button type="button" class="scale-btn" data-value="2">2</button>
-                        <button type="button" class="scale-btn" data-value="3">3</button>
-                        <button type="button" class="scale-btn" data-value="4">4</button>
-                        <button type="button" class="scale-btn" data-value="5">5</button>
-                    </div>
+                    <label class="form-label">Importância <span class="slider-value" id="importanceValue">3</span></label>
+                    <input type="range" class="form-input" id="inputImportance" min="1" max="5" value="3" style="padding: 8px 0;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="inputStatus">
+                        <option value="active">Ativo</option>
+                        <option value="hold">Em Espera</option>
+                        <option value="completed">Concluído</option>
+                    </select>
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="closeModalBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Adicionar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        console.log('🚀 CEO Radar inicializando...');
-
         const SUPABASE_URL = 'https://gqcjuivtogtqapqyjpns.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_N4Qn7hhy1kbcNxLyM1fw9A_cxNGIUrw';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let items = [];
-        let formState = { urgency: 0, importance: 0 };
-        let syncing = false;
-        let panelOpen = false;
+        let userId = localStorage.getItem('ceoRadarUserId') || 'user_' + Math.random().toString(36).substr(2, 9);
+        let topics = [];
+        let currentEditId = null;
 
-        const USER_ID = localStorage.getItem('ceoRadarUserId') || generateUserId();
-        if (!localStorage.getItem('ceoRadarUserId')) {
-            localStorage.setItem('ceoRadarUserId', USER_ID);
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            localStorage.setItem('ceoRadarUserId', userId);
+            setupEventListeners();
+            loadTopics();
+        });
+
+        function setupEventListeners() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+                localStorage.setItem('sidebarHidden', sidebar.classList.contains('hidden'));
+            });
+
+            // Restaurar estado da sidebar
+            if (localStorage.getItem('sidebarHidden') === 'true') {
+                sidebar.classList.add('hidden');
+            }
+
+            document.getElementById('inputUrgency').addEventListener('change', (e) => {
+                document.getElementById('urgencyValue').textContent = e.target.value;
+            });
+
+            document.getElementById('inputImportance').addEventListener('change', (e) => {
+                document.getElementById('importanceValue').textContent = e.target.value;
+            });
         }
 
-        function generateUserId() {
-            return 'user_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        const EXAMPLE_TOPICS = [
-            { title: 'Fechar contrato Campari', urgency: 5, importance: 5 },
-            { title: 'Fechar contrato Ambev', urgency: 4, importance: 5 },
-            { title: 'Aprovar redução de folha', urgency: 3, importance: 5 },
-            { title: 'Fechar consultora AI', urgency: 4, importance: 4 },
-            { title: 'Finalizar plano de expansão', urgency: 3, importance: 4 },
-            { title: 'Enviar kits copa', urgency: 2, importance: 3 }
-        ];
-
-        async function loadData() {
+        // Load topics from Supabase
+        async function loadTopics() {
             try {
-                document.getElementById('radarSubtitle').textContent = 'Sincronizando...';
-
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('topics')
                     .select('*')
-                    .eq('user_id', USER_ID)
+                    .eq('user_id', userId)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
 
-                items = data || [];
-
-                if (items.length === 0) {
-                    console.log('📝 Tabela vazia, populando com exemplos...');
-                    await populateExamples();
+                topics = data || [];
+                if (topics.length === 0) {
+                    addSampleTopics();
                 } else {
                     render();
                 }
-
-                document.getElementById('radarSubtitle').textContent = 'Sincronizado ✓';
             } catch (error) {
                 console.error('Erro ao carregar:', error);
-                document.getElementById('radarSubtitle').textContent = 'Erro ao carregar';
             }
         }
 
-        async function populateExamples() {
-            try {
-                const { data, error } = await supabase
-                    .from('topics')
-                    .insert(
-                        EXAMPLE_TOPICS.map(t => ({
-                            user_id: USER_ID,
-                            title: t.title,
-                            urgency: t.urgency,
-                            importance: t.importance,
-                            status: 'active'
-                        }))
-                    )
-                    .select();
+        // Add sample topics
+        async function addSampleTopics() {
+            const samples = [
+                { title: 'Fechar contrato Campari', urgency: 5, importance: 5 },
+                { title: 'Fechar contrato Ambev', urgency: 4, importance: 5 },
+                { title: 'Aprovar redução de folha', urgency: 3, importance: 5 },
+                { title: 'Fechar consultora AI', urgency: 4, importance: 4 },
+                { title: 'Finalizar plano expansão', urgency: 3, importance: 4 },
+                { title: 'Enviar kits copa', urgency: 2, importance: 3 }
+            ];
 
-                if (error) throw error;
-                items = data || [];
-                console.log('✓ Dados populados:', items.length, 'itens');
-                render();
-            } catch (error) {
-                console.error('Erro ao popular exemplos:', error);
-                alert('Erro ao popular dados. Verifique a conexão com o banco de dados.');
+            for (const sample of samples) {
+                await supabaseClient.from('topics').insert({
+                    user_id: userId,
+                    ...sample,
+                    status: 'active'
+                });
             }
+            loadTopics();
         }
 
-        async function addItem(title, urgency, importance) {
-            if (syncing) return;
-            syncing = true;
-
-            try {
-                const { data, error } = await supabase
-                    .from('topics')
-                    .insert([{
-                        user_id: USER_ID,
-                        title,
-                        urgency: parseInt(urgency),
-                        importance: parseInt(importance),
-                        status: 'active'
-                    }])
-                    .select();
-
-                if (error) throw error;
-
-                items = [...items, ...data];
-                render();
-            } catch (error) {
-                console.error('Erro ao adicionar:', error);
-                alert('Erro ao adicionar assunto');
-            } finally {
-                syncing = false;
-            }
-        }
-
-        async function updateStatus(id, status) {
-            if (syncing) return;
-            syncing = true;
-
-            try {
-                const { error } = await supabase
-                    .from('topics')
-                    .update({ status })
-                    .eq('id', id);
-
-                if (error) throw error;
-
-                const item = items.find(i => i.id === id);
-                if (item) item.status = status;
-                render();
-            } catch (error) {
-                console.error('Erro ao atualizar:', error);
-            } finally {
-                syncing = false;
-            }
-        }
-
-        async function deleteItem(id) {
-            if (syncing) return;
-            syncing = true;
-
-            try {
-                const { error } = await supabase
-                    .from('topics')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) throw error;
-
-                items = items.filter(i => i.id !== id);
-                render();
-            } catch (error) {
-                console.error('Erro ao deletar:', error);
-            } finally {
-                syncing = false;
-            }
-        }
-
-        function calculatePriority(urgency, importance) {
-            return urgency + importance;
-        }
-
-        function getPriorityClass(urgency, importance) {
-            const score = calculatePriority(urgency, importance);
-            if (score >= 8) return 'high-priority';
-            if (score >= 6) return 'medium-priority';
-            return '';
-        }
-
+        // Render everything
         function render() {
-            const active = items.filter(i => i.status === 'active');
-            const hold = items.filter(i => i.status === 'hold');
-            const completed = items.filter(i => i.status === 'completed');
-
-            document.getElementById('statActive').textContent = active.length;
-            document.getElementById('statHold').textContent = hold.length;
-            document.getElementById('statCompleted').textContent = completed.length;
-
-            renderRadar(active);
-            renderList(active, hold, completed);
+            renderRadar();
+            renderSidebar();
         }
 
-        function renderRadar(activeItems) {
-            const container = document.getElementById('radarItems');
+        // Render Radar
+        function renderRadar() {
+            const radarItems = document.getElementById('radarItems');
+            radarItems.innerHTML = '';
 
-            if (activeItems.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
+            const activeTopics = topics.filter(t => t.status === 'active');
+            const radarRect = document.querySelector('.radar-svg-wrapper');
+            const radarSize = radarRect.offsetWidth || 600;
+            const centerX = radarSize / 2;
+            const centerY = radarSize / 2;
 
-            container.innerHTML = activeItems.map(item => {
-                const x = (item.urgency / 5) * 100;
-                const y = 100 - (item.importance / 5) * 100;
+            activeTopics.forEach((topic, index) => {
+                const normUrgency = (topic.urgency - 1) / 4;
+                const normImportance = (topic.importance - 1) / 4;
 
-                return `
-                    <li class="item-point" style="left: ${x}%; top: ${y}%;">
-                        <div class="item-dot ${getPriorityClass(item.urgency, item.importance)}" title="${item.title}">
-                            <div class="item-tooltip">${item.title}</div>
-                            ${item.title.substring(0, 1).toUpperCase()}
-                        </div>
-                    </li>
+                let angle = Math.atan2(normImportance - 0.5, normUrgency - 0.5);
+                angle += (index * 0.4);
+
+                const priorityScore = (topic.urgency + topic.importance) / 10;
+                const distance = 80 + (priorityScore * 80);
+
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+
+                let priority = 'priority-baixo';
+                if (topic.urgency >= 4 && topic.importance >= 4) {
+                    priority = 'priority-critico';
+                } else if (topic.urgency >= 4 || topic.importance >= 4) {
+                    priority = 'priority-alto';
+                } else if (topic.urgency >= 3 || topic.importance >= 3) {
+                    priority = 'priority-medio';
+                }
+
+                const item = document.createElement('div');
+                item.className = `radar-item ${priority}`;
+                item.style.left = `${x}px`;
+                item.style.top = `${y}px`;
+                item.style.transform = 'translate(-50%, -50%)';
+
+                item.innerHTML = `
+                    <div class="radar-item-circle">${Math.max(topic.urgency, topic.importance)}</div>
+                    <div class="radar-item-label">${topic.title}</div>
                 `;
-            }).join('');
+
+                item.addEventListener('click', () => editTopic(topic));
+                radarItems.appendChild(item);
+            });
         }
 
-        function renderList(active, hold, completed) {
-            const container = document.getElementById('itemsContainer');
+        // Render Sidebar
+        function renderSidebar() {
+            const sidebarContent = document.getElementById('sidebarContent');
+            sidebarContent.innerHTML = '';
 
-            let html = '';
+            const activeTopics = topics.filter(t => t.status === 'active');
+            const holdTopics = topics.filter(t => t.status === 'hold');
+            const completedTopics = topics.filter(t => t.status === 'completed');
 
-            if (active.length > 0) {
-                html += '<div style="margin-bottom: 16px;"><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Ativos</div>';
-                html += '<div class="items-list">';
-                html += active.map(item => renderItemBadge(item, 'active')).join('');
-                html += '</div></div>';
+            if (activeTopics.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'topics-section';
+                section.innerHTML = '<div class="topics-section-label">Assuntos Ativos</div>';
+
+                activeTopics.forEach(topic => {
+                    section.appendChild(createTopicItem(topic));
+                });
+
+                sidebarContent.appendChild(section);
             }
 
-            if (hold.length > 0) {
-                html += '<div style="margin-bottom: 16px;"><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Em Espera</div>';
-                html += '<div class="items-list">';
-                html += hold.map(item => renderItemBadge(item, 'hold')).join('');
-                html += '</div></div>';
+            if (holdTopics.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'topics-section';
+                section.innerHTML = '<div class="topics-section-label" style="color: rgba(15,15,15,0.4);">Em Espera</div>';
+
+                holdTopics.forEach(topic => {
+                    const item = createTopicItem(topic);
+                    item.style.opacity = '0.6';
+                    section.appendChild(item);
+                });
+
+                sidebarContent.appendChild(section);
             }
 
-            if (completed.length > 0) {
-                html += '<div><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Concluídos</div>';
-                html += '<div class="items-list">';
-                html += completed.map(item => renderItemBadge(item, 'completed')).join('');
-                html += '</div></div>';
-            }
+            if (completedTopics.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'topics-section';
+                section.innerHTML = '<div class="topics-section-label" style="color: rgba(15,15,15,0.4);">Concluído</div>';
 
-            if (active.length === 0 && hold.length === 0 && completed.length === 0) {
-                html = '<div class="empty-state"><div class="empty-state-icon">🎯</div><p>Nenhum assunto ainda.<br>Clique em <strong>➕ Novo</strong> para começar.</p></div>';
-            }
+                completedTopics.forEach(topic => {
+                    const item = createTopicItem(topic);
+                    item.style.opacity = '0.4';
+                    const label = item.querySelector('.topic-label');
+                    label.style.textDecoration = 'line-through';
+                    section.appendChild(item);
+                });
 
-            container.innerHTML = html;
+                sidebarContent.appendChild(section);
+            }
         }
 
-        function renderItemBadge(item, status) {
-            const priority = calculatePriority(item.urgency, item.importance);
-            const emoji = priority >= 8 ? '🔴' : priority >= 6 ? '🟠' : '🟢';
+        function createTopicItem(topic) {
+            let priority = 'priority-baixo';
+            if (topic.urgency >= 4 && topic.importance >= 4) {
+                priority = 'priority-critico';
+            } else if (topic.urgency >= 4 || topic.importance >= 4) {
+                priority = 'priority-alto';
+            } else if (topic.urgency >= 3 || topic.importance >= 3) {
+                priority = 'priority-medio';
+            }
 
-            return `
-                <div class="item-badge ${status}">
-                    <span class="item-name">${emoji} ${item.title}</span>
-                    <div class="item-meta">
-                        <div class="item-scores">
-                            <div class="score-tag">U${item.urgency}</div>
-                            <div class="score-tag">I${item.importance}</div>
-                        </div>
-                        <div style="display:flex; gap: 4px;">
-                            ${status === 'active' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'hold')" style="background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning);">⏸</button>` : ''}
-                            ${status === 'hold' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'active')" style="background: rgba(99,102,241,0.2); color: var(--primary); border: 1px solid var(--primary);">▶</button>` : ''}
-                            ${status !== 'completed' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'completed')" style="background: rgba(16,185,129,0.2); color: var(--accent); border: 1px solid var(--accent);">✓</button>` : ''}
-                            <button class="btn btn-sm" onclick="deleteItem('${item.id}')" style="background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger);">✕</button>
-                        </div>
-                    </div>
-                </div>
+            const item = document.createElement('div');
+            item.className = `topic-item ${priority}`;
+            item.innerHTML = `
+                <div class="topic-priority-dot"></div>
+                <div class="topic-label">${topic.title}</div>
+                <div class="topic-score">U${topic.urgency}I${topic.importance}</div>
             `;
+
+            item.addEventListener('click', () => editTopic(topic));
+            return item;
         }
 
-        document.getElementById('panelToggle').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        function editTopic(topic) {
+            currentEditId = topic.id;
+            document.getElementById('inputTitle').value = topic.title;
+            document.getElementById('inputUrgency').value = topic.urgency;
+            document.getElementById('inputImportance').value = topic.importance;
+            document.getElementById('inputStatus').value = topic.status;
+            document.getElementById('urgencyValue').textContent = topic.urgency;
+            document.getElementById('importanceValue').textContent = topic.importance;
+            document.getElementById('modalTitle').textContent = 'Editar Assunto';
+            openModal();
+        }
 
-            const container = document.querySelector('.container');
-            panelOpen = !panelOpen;
-
-            if (panelOpen) {
-                container.classList.add('panel-open');
-                console.log('📂 Painel aberto ✓');
-            } else {
-                container.classList.remove('panel-open');
-                console.log('📂 Painel fechado');
+        // Modal functions
+        function openModal(mode = 'edit') {
+            if (mode === 'add') {
+                currentEditId = null;
+                document.getElementById('inputTitle').value = '';
+                document.getElementById('inputUrgency').value = 3;
+                document.getElementById('inputImportance').value = 3;
+                document.getElementById('inputStatus').value = 'active';
+                document.getElementById('urgencyValue').textContent = 3;
+                document.getElementById('importanceValue').textContent = 3;
+                document.getElementById('modalTitle').textContent = 'Novo Assunto';
             }
-        });
+            document.getElementById('modal').classList.add('show');
+        }
 
-        document.addEventListener('click', (e) => {
-            const panel = document.querySelector('.panel-section');
-            const btn = document.getElementById('panelToggle');
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
 
-            if (panelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
-                document.querySelector('.container').classList.remove('panel-open');
-                panelOpen = false;
+        // Save topic
+        async function saveTopic(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('inputTitle').value;
+            const urgency = parseInt(document.getElementById('inputUrgency').value);
+            const importance = parseInt(document.getElementById('inputImportance').value);
+            const status = document.getElementById('inputStatus').value;
+
+            try {
+                if (currentEditId) {
+                    const { error } = await supabaseClient
+                        .from('topics')
+                        .update({ title, urgency, importance, status })
+                        .eq('id', currentEditId);
+
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('topics')
+                        .insert({
+                            user_id: userId,
+                            title,
+                            urgency,
+                            importance,
+                            status
+                        });
+
+                    if (error) throw error;
+                }
+
+                closeModal();
+                loadTopics();
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                alert('Erro ao salvar. Tente novamente.');
             }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
         });
-
-        document.getElementById('newItemBtn').addEventListener('click', () => {
-            document.getElementById('modal').classList.add('active');
-            formState = { urgency: 0, importance: 0 };
-            document.querySelectorAll('.scale-btn').forEach(btn => btn.classList.remove('active'));
-        });
-
-        document.getElementById('closeModalBtn').addEventListener('click', () => {
-            document.getElementById('modal').classList.remove('active');
-        });
-
-        document.querySelectorAll('#urgencyScale .scale-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelectorAll('#urgencyScale .scale-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                formState.urgency = btn.dataset.value;
-            });
-        });
-
-        document.querySelectorAll('#importanceScale .scale-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.preventDefault();
-                document.querySelectorAll('#importanceScale .scale-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                formState.importance = btn.dataset.value;
-            });
-        });
-
-        document.getElementById('itemForm').addEventListener('submit', e => {
-            e.preventDefault();
-            const title = document.getElementById('titleInput').value.trim();
-
-            if (!title || !formState.urgency || !formState.importance) {
-                alert('Preencha todos os campos');
-                return;
-            }
-
-            addItem(title, formState.urgency, formState.importance);
-            document.getElementById('itemForm').reset();
-            document.getElementById('modal').classList.remove('active');
-        });
-
-        document.getElementById('modal').addEventListener('click', e => {
-            if (e.target === document.getElementById('modal')) {
-                document.getElementById('modal').classList.remove('active');
-            }
-        });
-
-        document.getElementById('exportBtn').addEventListener('click', () => {
-            const text = items.map(i => `${i.title} | U${i.urgency} I${i.importance} | ${i.status}`).join('\n');
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `radar-${new Date().toISOString().split('T')[0]}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        loadData();
     </script>
 </body>
 </html>
