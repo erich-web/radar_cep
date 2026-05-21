@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup CEO Radar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1a2945 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #F1F5F9;
+        }
+        .container {
+            max-width: 500px;
+            background: #1E293B;
+            border: 1px solid #475569;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: #F1F5F9;
+        }
+        .subtitle {
+            color: #CBD5E1;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .status-box {
+            background: #0F172A;
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            min-height: 200px;
+            overflow-y: auto;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-icon {
+            font-size: 16px;
+            min-width: 20px;
+        }
+        .status-icon.loading {
+            animation: spin 1s linear infinite;
+        }
+        .status-icon.success {
+            color: #10B981;
+        }
+        .status-icon.error {
+            color: #EF4444;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .button {
+            width: 100%;
+            padding: 14px;
+            background: #6366F1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .button:hover {
+            background: #818CF8;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10B981;
+            color: #34D399;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 24px;
+            text-align: center;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #EF4444;
+            color: #FCA5A5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 24px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Setup CEO Radar</h1>
+        <p class="subtitle">Cadastrando seus assuntos...</p>
+
+        <div class="status-box" id="statusBox"></div>
+
+        <button class="button" id="setupBtn" onclick="setupData()">
+            INICIAR SETUP
+        </button>
+
+        <div class="success-message" id="successMsg">
+            ✅ Dados cadastrados com sucesso!<br><br>
+            <small>Abra agora o <strong>ceo-radar-final.html</strong> para ver seu radar.</small>
+        </div>
+
+        <div class="error-message" id="errorMsg"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://gqcjuivtogtqapqyjpns.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_N4Qn7hhy1kbcNxLyM1fw9A_cxNGIUrw';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const TOPICS = [
+            { title: 'Fechar contrato Campari', urgency: 5, importance: 5 },
+            { title: 'Fechar contrato Ambev', urgency: 4, importance: 5 },
+            { title: 'Aprovar redução de folha', urgency: 3, importance: 5 },
+            { title: 'Fechar consultora AI', urgency: 4, importance: 4 },
+            { title: 'Finalizar plano de expansão', urgency: 3, importance: 4 },
+            { title: 'Enviar kits copa', urgency: 2, importance: 3 }
+        ];
+
+        let userId = localStorage.getItem('ceoRadarUserId') || 'user_' + Math.random().toString(36).substr(2, 9);
+
+        function updateStatus(topic, icon, status) {
+            const box = document.getElementById('statusBox');
+            const existing = box.querySelector(`[data-topic="${topic}"]`);
+
+            if (existing) {
+                existing.innerHTML = `<span class="status-icon ${status}">${icon}</span> ${topic}`;
+            } else {
+                const item = document.createElement('div');
+                item.className = 'status-item';
+                item.setAttribute('data-topic', topic);
+                item.innerHTML = `<span class="status-icon ${status}">${icon}</span> ${topic}`;
+                box.appendChild(item);
+            }
+        }
+
+        async function setupData() {
+            const btn = document.getElementById('setupBtn');
+            btn.disabled = true;
+
+            try {
+                // Salvar user_id
+                if (!localStorage.getItem('ceoRadarUserId')) {
+                    localStorage.setItem('ceoRadarUserId', userId);
+                }
+
+                // Limpar dados antigos (opcional)
+                await supabase
+                    .from('topics')
+                    .delete()
+                    .eq('user_id', userId);
+
+                // Inserir novos dados
+                for (const topic of TOPICS) {
+                    updateStatus(topic.title, '⏳', 'loading');
+
+                    const { error } = await supabase
+                        .from('topics')
+                        .insert([{
+                            user_id: userId,
+                            title: topic.title,
+                            urgency: topic.urgency,
+                            importance: topic.importance,
+                            status: 'active'
+                        }]);
+
+                    if (error) {
+                        console.error('Erro:', error);
+                        updateStatus(topic.title, '❌', 'error');
+                        throw error;
+                    }
+
+                    updateStatus(topic.title, '✅', 'success');
+                    await new Promise(r => setTimeout(r, 300)); // Delay para efeito visual
+                }
+
+                setTimeout(() => {
+                    document.getElementById('successMsg').classList.add('show');
+                    btn.textContent = '✅ SETUP CONCLUÍDO';
+                }, 500);
+
+            } catch (error) {
+                console.error('Erro no setup:', error);
+                document.getElementById('errorMsg').classList.add('show');
+                document.getElementById('errorMsg').innerHTML = `
+                    ❌ Erro ao cadastrar dados<br><br>
+                    <strong>Motivo:</strong> ${error.message}<br><br>
+                    Verifique se a tabela 'topics' existe no Supabase com as colunas:<br>
+                    - id (uuid)<br>
+                    - user_id (text)<br>
+                    - title (text)<br>
+                    - urgency (integer)<br>
+                    - importance (integer)<br>
+                    - status (text)<br>
+                    - created_at (timestamp)
+                `;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
