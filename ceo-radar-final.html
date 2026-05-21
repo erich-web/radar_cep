@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Radar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-light: #818CF8;
+            --accent: #10B981;
+            --accent-light: #34D399;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg: #0F172A;
+            --bg-secondary: #1E293B;
+            --bg-tertiary: #334155;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+            --text-tertiary: #94A3B8;
+            --border: #475569;
+            --panel-width: 380px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #1a2945 100%);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ============ LAYOUT ============ */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            height: 100vh;
+            position: relative;
+        }
+
+        .radar-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            height: 100%;
+            width: 100%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .container.panel-open .radar-section {
+            margin-right: var(--panel-width);
+        }
+
+        .panel-section {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: var(--panel-width);
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(100%);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .container.panel-open .panel-section {
+            transform: translateX(0);
+        }
+
+        .panel-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .panel-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
+        }
+
+        .container.panel-open .panel-toggle {
+            right: calc(var(--panel-width) + 20px);
+        }
+
+        /* ============ RADAR ============ */
+        .radar-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 85vw;
+            height: 85vh;
+            aspect-ratio: 1;
+        }
+
+        .radar-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .radar-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 40px rgba(99, 102, 241, 0.15));
+        }
+
+        .radar-items {
+            position: absolute;
+            inset: 0;
+            list-style: none;
+        }
+
+        .item-point {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+        }
+
+        .item-dot {
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            border: 3px solid var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .item-dot::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
+            border-radius: 50%;
+        }
+
+        .item-dot.high-priority {
+            background: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
+            border-color: #FCA5A5;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .item-dot.medium-priority {
+            background: linear-gradient(135deg, var(--warning) 0%, #D97706 100%);
+            border-color: #FBBF24;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .item-dot:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .item-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 8px;
+            white-space: nowrap;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            border: 1px solid var(--border);
+            z-index: 10;
+            margin-bottom: 10px;
+        }
+
+        .item-dot:hover .item-tooltip {
+            opacity: 1;
+        }
+
+        /* ============ PANEL ============ */
+        .panel-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .panel-subtitle {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ============ STATS ============ */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-light);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ============ ITEMS LIST ============ */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item-badge {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: block;
+        }
+
+        .item-badge:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .item-badge.on-hold {
+            opacity: 0.6;
+            border-color: var(--warning);
+        }
+
+        .item-badge.completed {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .item-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .item-scores {
+            display: flex;
+            gap: 8px;
+        }
+
+        .score-tag {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-light);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* ============ BUTTONS ============ */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 10px;
+        }
+
+        /* ============ MODAL ============ */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--bg);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .scale-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .scale-btn {
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .scale-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .scale-btn:hover:not(.active) {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* ============ SCROLLBAR ============ */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border);
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            .radar-section {
+                padding: 10px;
+            }
+
+            .radar-wrapper {
+                max-width: 90vw;
+                height: 90vh;
+            }
+
+            .item-point {
+                width: 50px;
+                height: 50px;
+            }
+
+            .modal-content {
+                padding: 24px;
+            }
+
+            :root {
+                --panel-width: 100%;
+            }
+
+            .panel-section {
+                width: 100%;
+                bottom: 0;
+                right: 0;
+                height: auto;
+                max-height: 60vh;
+                transform: translateY(100%);
+                border-left: none;
+                border-top: 1px solid var(--border);
+            }
+
+            .container.panel-open .panel-section {
+                transform: translateY(0);
+            }
+
+            .container.panel-open .radar-section {
+                margin-right: 0;
+                margin-bottom: 60vh;
+            }
+        }
+
+        /* ============ EMPTY STATE ============ */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state p {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- RADAR SECTION -->
+        <div class="radar-section">
+            <div class="radar-wrapper">
+                <div class="radar-canvas">
+                    <svg class="radar-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <radialGradient id="radarGradient" cx="50%" cy="50%" r="60%">
+                                <stop offset="0%" style="stop-color:rgba(99,102,241,0.1);stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:rgba(99,102,241,0);stop-opacity:1" />
+                            </radialGradient>
+                        </defs>
+
+                        <circle cx="200" cy="200" r="160" fill="url(#radarGradient)"/>
+                        <circle cx="200" cy="200" r="160" fill="none" stroke="rgba(99,102,241,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <circle cx="200" cy="200" r="120" fill="none" stroke="rgba(99,102,241,0.12)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <circle cx="200" cy="200" r="80" fill="none" stroke="rgba(99,102,241,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <circle cx="200" cy="200" r="40" fill="none" stroke="rgba(99,102,241,0.2)" stroke-width="2"/>
+
+                        <line x1="200" y1="15" x2="200" y2="385" stroke="rgba(99,102,241,0.15)" stroke-width="1.5"/>
+                        <line x1="15" y1="200" x2="385" y2="200" stroke="rgba(99,102,241,0.15)" stroke-width="1.5"/>
+                        <line x1="50" y1="50" x2="350" y2="350" stroke="rgba(99,102,241,0.08)" stroke-width="1"/>
+                        <line x1="350" y1="50" x2="50" y2="350" stroke="rgba(99,102,241,0.08)" stroke-width="1"/>
+
+                        <text x="200" y="25" text-anchor="middle" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">CRÍTICO</text>
+                        <text x="385" y="207" text-anchor="start" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">CRÍTICO</text>
+                        <text x="200" y="395" text-anchor="middle" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">BAIXO</text>
+                        <text x="12" y="207" text-anchor="end" font-size="14" fill="rgba(148,163,184,0.7)" font-family="Inter" font-weight="600">BAIXO</text>
+
+                        <text x="200" y="55" text-anchor="middle" font-size="11" fill="rgba(148,163,184,0.5)" font-family="Inter">Importância</text>
+                        <text x="360" y="190" text-anchor="end" font-size="11" fill="rgba(148,163,184,0.5)" font-family="Inter">Urgência</text>
+                    </svg>
+
+                    <ul class="radar-items" id="radarItems"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL SECTION -->
+        <div class="panel-section">
+            <div class="panel-header">
+                <div class="panel-title">Seu Radar</div>
+                <div class="panel-subtitle" id="radarSubtitle">Carregando...</div>
+            </div>
+
+            <div class="panel-content">
+                <div class="stats-row">
+                    <div class="stat">
+                        <div class="stat-value" id="statActive">0</div>
+                        <div class="stat-label">Ativos</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statHold">0</div>
+                        <div class="stat-label">Em Espera</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statCompleted">0</div>
+                        <div class="stat-label">Concluídos</div>
+                    </div>
+                </div>
+
+                <div id="itemsContainer"></div>
+            </div>
+
+            <div class="panel-footer">
+                <button class="btn btn-secondary btn-sm" id="exportBtn">📥</button>
+                <button class="btn btn-primary" id="newItemBtn">➕ Novo</button>
+            </div>
+        </div>
+
+        <!-- PANEL TOGGLE -->
+        <button class="panel-toggle" id="panelToggle">☰</button>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Novo Assunto</h2>
+
+            <form id="itemForm">
+                <div class="form-group">
+                    <label class="form-label">Título</label>
+                    <input type="text" class="form-input" id="titleInput" placeholder="Ex: Fechar contrato Campari" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Urgência (1-5)</label>
+                    <div class="scale-buttons" id="urgencyScale">
+                        <button type="button" class="scale-btn" data-value="1">1</button>
+                        <button type="button" class="scale-btn" data-value="2">2</button>
+                        <button type="button" class="scale-btn" data-value="3">3</button>
+                        <button type="button" class="scale-btn" data-value="4">4</button>
+                        <button type="button" class="scale-btn" data-value="5">5</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Importância (1-5)</label>
+                    <div class="scale-buttons" id="importanceScale">
+                        <button type="button" class="scale-btn" data-value="1">1</button>
+                        <button type="button" class="scale-btn" data-value="2">2</button>
+                        <button type="button" class="scale-btn" data-value="3">3</button>
+                        <button type="button" class="scale-btn" data-value="4">4</button>
+                        <button type="button" class="scale-btn" data-value="5">5</button>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="closeModalBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // SUPABASE CONFIG
+        const SUPABASE_URL = 'https://gqcjuivtogtqapqyjpns.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_N4Qn7hhy1kbcNxLyM1fw9A_cxNGIUrw';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let items = [];
+        let formState = { urgency: 0, importance: 0 };
+        let syncing = false;
+
+        // USER ID
+        const USER_ID = localStorage.getItem('ceoRadarUserId') || generateUserId();
+        if (!localStorage.getItem('ceoRadarUserId')) {
+            localStorage.setItem('ceoRadarUserId', USER_ID);
+        }
+
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // EXAMPLE TOPICS
+        const EXAMPLE_TOPICS = [
+            { title: 'Fechar contrato Campari', urgency: 5, importance: 5 },
+            { title: 'Fechar contrato Ambev', urgency: 4, importance: 5 },
+            { title: 'Aprovar redução de folha', urgency: 3, importance: 5 },
+            { title: 'Fechar consultora AI', urgency: 4, importance: 4 },
+            { title: 'Finalizar plano de expansão', urgency: 3, importance: 4 },
+            { title: 'Enviar kits copa', urgency: 2, importance: 3 }
+        ];
+
+        // LOAD DATA
+        async function loadData() {
+            try {
+                document.getElementById('radarSubtitle').textContent = 'Sincronizando...';
+
+                const { data, error } = await supabase
+                    .from('topics')
+                    .select('*')
+                    .eq('user_id', USER_ID)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                items = data || [];
+
+                // Se vazio, popular com exemplos
+                if (items.length === 0) {
+                    console.log('📝 Tabela vazia, populando com exemplos...');
+                    await populateExamples();
+                } else {
+                    render();
+                }
+
+                document.getElementById('radarSubtitle').textContent = 'Sincronizado ✓';
+            } catch (error) {
+                console.error('Erro ao carregar:', error);
+                document.getElementById('radarSubtitle').textContent = 'Erro ao carregar';
+            }
+        }
+
+        // POPULATE EXAMPLES
+        async function populateExamples() {
+            try {
+                const { data, error } = await supabase
+                    .from('topics')
+                    .insert(
+                        EXAMPLE_TOPICS.map(t => ({
+                            user_id: USER_ID,
+                            title: t.title,
+                            urgency: t.urgency,
+                            importance: t.importance,
+                            status: 'active'
+                        }))
+                    )
+                    .select();
+
+                if (error) throw error;
+                items = data || [];
+                console.log('✓ Dados populados:', items.length, 'itens');
+                render();
+            } catch (error) {
+                console.error('Erro ao popular exemplos:', error);
+                alert('Erro ao popular dados. Verifique a conexão com o banco de dados.');
+            }
+        }
+
+        // ADD ITEM
+        async function addItem(title, urgency, importance) {
+            if (syncing) return;
+            syncing = true;
+
+            try {
+                const { data, error } = await supabase
+                    .from('topics')
+                    .insert([{
+                        user_id: USER_ID,
+                        title,
+                        urgency: parseInt(urgency),
+                        importance: parseInt(importance),
+                        status: 'active'
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                items = [...items, ...data];
+                render();
+            } catch (error) {
+                console.error('Erro ao adicionar:', error);
+                alert('Erro ao adicionar assunto');
+            } finally {
+                syncing = false;
+            }
+        }
+
+        // UPDATE STATUS
+        async function updateStatus(id, status) {
+            if (syncing) return;
+            syncing = true;
+
+            try {
+                const { error } = await supabase
+                    .from('topics')
+                    .update({ status })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                const item = items.find(i => i.id === id);
+                if (item) item.status = status;
+                render();
+            } catch (error) {
+                console.error('Erro ao atualizar:', error);
+            } finally {
+                syncing = false;
+            }
+        }
+
+        // DELETE ITEM
+        async function deleteItem(id) {
+            if (syncing) return;
+            syncing = true;
+
+            try {
+                const { error } = await supabase
+                    .from('topics')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                items = items.filter(i => i.id !== id);
+                render();
+            } catch (error) {
+                console.error('Erro ao deletar:', error);
+            } finally {
+                syncing = false;
+            }
+        }
+
+        // CALCULATE PRIORITY
+        function calculatePriority(urgency, importance) {
+            return urgency + importance;
+        }
+
+        function getPriorityClass(urgency, importance) {
+            const score = calculatePriority(urgency, importance);
+            if (score >= 8) return 'high-priority';
+            if (score >= 6) return 'medium-priority';
+            return '';
+        }
+
+        // RENDER
+        function render() {
+            const active = items.filter(i => i.status === 'active');
+            const hold = items.filter(i => i.status === 'hold');
+            const completed = items.filter(i => i.status === 'completed');
+
+            document.getElementById('statActive').textContent = active.length;
+            document.getElementById('statHold').textContent = hold.length;
+            document.getElementById('statCompleted').textContent = completed.length;
+
+            renderRadar(active);
+            renderList(active, hold, completed);
+        }
+
+        function renderRadar(activeItems) {
+            const container = document.getElementById('radarItems');
+
+            if (activeItems.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = activeItems.map(item => {
+                const x = (item.urgency / 5) * 100;
+                const y = 100 - (item.importance / 5) * 100;
+
+                return `
+                    <li class="item-point" style="left: ${x}%; top: ${y}%;">
+                        <div class="item-dot ${getPriorityClass(item.urgency, item.importance)}" title="${item.title}">
+                            <div class="item-tooltip">${item.title}</div>
+                            ${item.title.substring(0, 1).toUpperCase()}
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function renderList(active, hold, completed) {
+            const container = document.getElementById('itemsContainer');
+
+            let html = '';
+
+            if (active.length > 0) {
+                html += '<div style="margin-bottom: 16px;"><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Ativos</div>';
+                html += '<div class="items-list">';
+                html += active.map(item => renderItemBadge(item, 'active')).join('');
+                html += '</div></div>';
+            }
+
+            if (hold.length > 0) {
+                html += '<div style="margin-bottom: 16px;"><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Em Espera</div>';
+                html += '<div class="items-list">';
+                html += hold.map(item => renderItemBadge(item, 'hold')).join('');
+                html += '</div></div>';
+            }
+
+            if (completed.length > 0) {
+                html += '<div><div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px;">Concluídos</div>';
+                html += '<div class="items-list">';
+                html += completed.map(item => renderItemBadge(item, 'completed')).join('');
+                html += '</div></div>';
+            }
+
+            if (active.length === 0 && hold.length === 0 && completed.length === 0) {
+                html = '<div class="empty-state"><div class="empty-state-icon">🎯</div><p>Nenhum assunto ainda.<br>Clique em <strong>➕ Novo</strong> para começar.</p></div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderItemBadge(item, status) {
+            const priority = calculatePriority(item.urgency, item.importance);
+            const emoji = priority >= 8 ? '🔴' : priority >= 6 ? '🟠' : '🟢';
+
+            return `
+                <div class="item-badge ${status}">
+                    <span class="item-name">${emoji} ${item.title}</span>
+                    <div class="item-meta">
+                        <div class="item-scores">
+                            <div class="score-tag">U${item.urgency}</div>
+                            <div class="score-tag">I${item.importance}</div>
+                        </div>
+                        <div style="display:flex; gap: 4px;">
+                            ${status === 'active' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'hold')" style="background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning);">⏸</button>` : ''}
+                            ${status === 'hold' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'active')" style="background: rgba(99,102,241,0.2); color: var(--primary); border: 1px solid var(--primary);">▶</button>` : ''}
+                            ${status !== 'completed' ? `<button class="btn btn-sm" onclick="updateStatus('${item.id}', 'completed')" style="background: rgba(16,185,129,0.2); color: var(--accent); border: 1px solid var(--accent);">✓</button>` : ''}
+                            <button class="btn btn-sm" onclick="deleteItem('${item.id}')" style="background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger);">✕</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // EVENT LISTENERS
+        document.getElementById('panelToggle').addEventListener('click', () => {
+            document.querySelector('.container').classList.toggle('panel-open');
+        });
+
+        document.getElementById('newItemBtn').addEventListener('click', () => {
+            document.getElementById('modal').classList.add('active');
+            formState = { urgency: 0, importance: 0 };
+            document.querySelectorAll('.scale-btn').forEach(btn => btn.classList.remove('active'));
+        });
+
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            document.getElementById('modal').classList.remove('active');
+        });
+
+        document.querySelectorAll('#urgencyScale .scale-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('#urgencyScale .scale-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                formState.urgency = btn.dataset.value;
+            });
+        });
+
+        document.querySelectorAll('#importanceScale .scale-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('#importanceScale .scale-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                formState.importance = btn.dataset.value;
+            });
+        });
+
+        document.getElementById('itemForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const title = document.getElementById('titleInput').value.trim();
+
+            if (!title || !formState.urgency || !formState.importance) {
+                alert('Preencha todos os campos');
+                return;
+            }
+
+            addItem(title, formState.urgency, formState.importance);
+            document.getElementById('itemForm').reset();
+            document.getElementById('modal').classList.remove('active');
+        });
+
+        document.getElementById('modal').addEventListener('click', e => {
+            if (e.target === document.getElementById('modal')) {
+                document.getElementById('modal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const text = items.map(i => `${i.title} | U${i.urgency} I${i.importance} | ${i.status}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `radar-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // INIT
+        loadData();
+    </script>
+</body>
+</html>
