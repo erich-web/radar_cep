@@ -106,8 +106,13 @@
             box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
         }
 
+        .panel-toggle:active {
+            transform: scale(0.95);
+        }
+
         .container.panel-open .panel-toggle {
             right: calc(var(--panel-width) + 20px);
+            background: var(--accent);
         }
 
         /* ============ RADAR ============ */
@@ -697,6 +702,8 @@
     </div>
 
     <script>
+        console.log('🚀 CEO Radar inicializando...');
+
         // SUPABASE CONFIG
         const SUPABASE_URL = 'https://gqcjuivtogtqapqyjpns.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_N4Qn7hhy1kbcNxLyM1fw9A_cxNGIUrw';
@@ -705,6 +712,7 @@
         let items = [];
         let formState = { urgency: 0, importance: 0 };
         let syncing = false;
+        let panelOpen = false;
 
         // USER ID
         const USER_ID = localStorage.getItem('ceoRadarUserId') || generateUserId();
@@ -962,8 +970,32 @@
         }
 
         // EVENT LISTENERS
-        document.getElementById('panelToggle').addEventListener('click', () => {
-            document.querySelector('.container').classList.toggle('panel-open');
+        document.getElementById('panelToggle').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const container = document.querySelector('.container');
+            panelOpen = !panelOpen;
+
+            if (panelOpen) {
+                container.classList.add('panel-open');
+                console.log('📂 Painel aberto');
+            } else {
+                container.classList.remove('panel-open');
+                console.log('📂 Painel fechado');
+            }
+        });
+
+        // Fechar painel ao clicar fora
+        document.addEventListener('click', (e) => {
+            const panel = document.querySelector('.panel-section');
+            const btn = document.getElementById('panelToggle');
+
+            if (panelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
+                document.querySelector('.container').classList.remove('panel-open');
+                panelOpen = false;
+                console.log('📂 Painel fechado (clique fora)');
+            }
         });
 
         document.getElementById('newItemBtn').addEventListener('click', () => {
