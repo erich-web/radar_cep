@@ -1020,21 +1020,46 @@
         async function saveTopic(event) {
             event.preventDefault();
 
-            const title = document.getElementById('inputTitle').value;
+            const title = document.getElementById('inputTitle').value.trim();
             const urgency = parseInt(document.getElementById('inputUrgency').value);
             const importance = parseInt(document.getElementById('inputImportance').value);
             const status = document.getElementById('inputStatus').value;
 
+            // Validação de entrada
+            if (!title) {
+                alert('Por favor, insira um assunto.');
+                return;
+            }
+
+            if (isNaN(urgency) || urgency < 1 || urgency > 10) {
+                alert('Urgência deve ser entre 1 e 10.');
+                return;
+            }
+
+            if (isNaN(importance) || importance < 1 || importance > 10) {
+                alert('Importância deve ser entre 1 e 10.');
+                return;
+            }
+
+            // Log detalhado para debug
+            console.log('Salvando tópico:', { title, urgency, importance, status, userId });
+
             try {
                 if (currentEditId) {
+                    console.log('Atualizando tópico ID:', currentEditId);
                     const { error } = await supabaseClient
                         .from('topics')
                         .update({ title, urgency, importance, status })
                         .eq('id', currentEditId);
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Erro na atualização:', error);
+                        throw error;
+                    }
+                    console.log('Tópico atualizado com sucesso');
                 } else {
-                    const { error } = await supabaseClient
+                    console.log('Inserindo novo tópico');
+                    const { data, error } = await supabaseClient
                         .from('topics')
                         .insert({
                             user_id: userId,
@@ -1042,16 +1067,33 @@
                             urgency,
                             importance,
                             status
-                        });
+                        })
+                        .select();
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Erro na inserção:', error);
+                        console.error('Dados enviados:', { userId, title, urgency, importance, status });
+                        throw error;
+                    }
+                    console.log('Tópico inserido com sucesso:', data);
                 }
 
                 closeModal();
-                loadTopics();
+                await loadTopics();
             } catch (error) {
                 console.error('Erro ao salvar:', error);
-                alert('Erro ao salvar. Tente novamente.');
+
+                // Mensagens de erro mais específicas
+                let mensagem = 'Erro ao salvar. Tente novamente.';
+                if (error.message && error.message.includes('violates check constraint')) {
+                    mensagem = 'Valores inválidos. Urgência e Importância devem estar entre 1 e 10.';
+                } else if (error.code === '42501') {
+                    mensagem = 'Você não tem permissão para fazer esta ação.';
+                } else if (error.message) {
+                    mensagem = `Erro: ${error.message}`;
+                }
+
+                alert(mensagem);
             }
         }
 
